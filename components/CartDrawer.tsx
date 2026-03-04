@@ -2,9 +2,11 @@
 
 import { X, Trash2, Plus, Minus, ShoppingBag } from 'lucide-react';
 import { useCart } from '../store/CartContext';
+import { useRouter } from 'next/navigation';
 
 export default function CartDrawer() {
   const { cart, isCartOpen, closeCart, removeFromCart, updateQuantity, cartTotal } = useCart();
+  const router = useRouter();
 
   // If the cart is closed, don't render the overlay block at all
   if (!isCartOpen) return null;
@@ -98,7 +100,13 @@ export default function CartDrawer() {
               <span className="text-slate-500 font-medium">Subtotal</span>
               <span className="text-xl font-bold text-slate-900">RM {cartTotal.toFixed(2)}</span>
             </div>
-            <button className="w-full bg-slate-900 text-white font-semibold py-3 rounded-lg hover:bg-indigo-600 transition-colors shadow-md">
+            <button 
+              onClick={() => {
+                closeCart();
+                router.push('/checkout');
+              }}
+              className="w-full bg-slate-900 text-white font-semibold py-3 rounded-lg hover:bg-indigo-600 transition-colors shadow-md"
+            >
               Proceed to Checkout
             </button>
           </div>

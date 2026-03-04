@@ -17,7 +17,7 @@ export default function Navbar() {
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 text-xl font-bold text-slate-900">
             <Library className="w-6 h-6 text-indigo-600" />
-            'Arif Buuku
+            'Arif's Buuku
           </Link>
 
           {/* Right Side Actions */}
@@ -34,9 +34,14 @@ export default function Navbar() {
                   </Link>
                 )}
                 
-                <span className="text-sm text-slate-600 hidden sm:block">
+                {/* Profile Link instead of static text */}
+                <Link 
+                  href="/profile" 
+                  className="text-sm font-medium text-slate-700 hover:text-indigo-600 hidden sm:flex items-center gap-2 transition-colors px-3 py-1.5 rounded-md hover:bg-slate-50"
+                >
+                  <UserIcon className="w-4 h-4" />
                   {user.email}
-                </span>
+                </Link>
                 <button 
                   onClick={logout}
                   className="text-slate-500 hover:text-red-600 transition-colors"

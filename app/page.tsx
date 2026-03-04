@@ -70,7 +70,7 @@ export default function Home() {
       
       {/* Hero Section */}
       <div className="bg-slate-900 text-white py-16 px-8 text-center">
-        <h1 className="text-5xl font-bold mb-4">'Arif Buuku</h1>
+        <h1 className="text-5xl font-bold mb-4">'Arif's Buuku</h1>
         <p className="text-slate-300 text-lg max-w-2xl mx-auto mb-8">
           Your premier destination for computing texts, modern fiction, and tools for growth.
         </p>

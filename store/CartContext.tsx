@@ -1,13 +1,16 @@
 'use client';
 
-import { createContext, useContext, useState, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { ref, onValue, set } from 'firebase/database';
+import { db } from '../lib/firebase';
+import { useAuth } from './AuthContext'; // We need to know who is logged in!
 
 type CartItem = {
   id: string;
   title: string;
   price: number;
   quantity: number;
-  coverUrl?: string; // Adding this to show images in the cart
+  coverUrl?: string;
 };
 
 interface CartContextType {
@@ -27,35 +30,57 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 export function CartProvider({ children }: { children: ReactNode }) {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const { user } = useAuth(); // Pull the current user
+
+  // 1. Listen to Firebase for the logged-in user's cart
+  useEffect(() => {
+    if (user) {
+      const cartRef = ref(db, `users/${user.uid}/cart`);
+      const unsubscribe = onValue(cartRef, (snapshot) => {
+        const data = snapshot.val();
+        setCart(data ? data : []); // If they have a cart, load it. If not, empty array.
+      });
+      return () => unsubscribe();
+    } else {
+      setCart([]); // Instantly clear the cart if no one is logged in
+    }
+  }, [user]);
+
+  // Helper to update Firebase (which then automatically updates our local state)
+  const updateFirebaseCart = async (newCart: CartItem[]) => {
+    if (user) {
+      await set(ref(db, `users/${user.uid}/cart`), newCart);
+    } else {
+      setCart(newCart); // Fallback for guest users before they log in
+    }
+  };
 
   const addToCart = (product: any) => {
-    setCart((prevCart) => {
-      const existingItem = prevCart.find((item) => item.id === product.id);
-      if (existingItem) {
-        return prevCart.map((item) =>
-          item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
-        );
-      }
-      return [...prevCart, { 
-        id: product.id, 
-        title: product.title, 
-        price: product.price, 
-        quantity: 1,
-        coverUrl: product.coverUrl 
-      }];
-    });
-    setIsCartOpen(true); // Automatically open the drawer when an item is added!
+    let newCart = [...cart];
+    const existingItem = newCart.find((item) => item.id === product.id);
+    
+    if (existingItem) {
+      existingItem.quantity += 1;
+    } else {
+      newCart.push({ 
+        id: product.id, title: product.title, price: product.price, 
+        quantity: 1, coverUrl: product.coverUrl 
+      });
+    }
+    
+    updateFirebaseCart(newCart);
+    // NOTICE: We removed setIsCartOpen(true) here! The drawer will stay hidden.
   };
 
   const removeFromCart = (id: string) => {
-    setCart((prevCart) => prevCart.filter(item => item.id !== id));
+    const newCart = cart.filter(item => item.id !== id);
+    updateFirebaseCart(newCart);
   };
 
   const updateQuantity = (id: string, newQuantity: number) => {
-    if (newQuantity < 1) return; // Prevent quantity from going below 1
-    setCart((prevCart) => 
-      prevCart.map(item => item.id === id ? { ...item, quantity: newQuantity } : item)
-    );
+    if (newQuantity < 1) return;
+    const newCart = cart.map(item => item.id === id ? { ...item, quantity: newQuantity } : item);
+    updateFirebaseCart(newCart);
   };
 
   const openCart = () => setIsCartOpen(true);
