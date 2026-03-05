@@ -3,9 +3,9 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '../../store/AuthContext';
 import { useRouter } from 'next/navigation';
-import { ref, get, onValue } from 'firebase/database';
+import { ref, get, onValue, query, orderByChild, equalTo } from 'firebase/database';
 import { db } from '../../lib/firebase';
-import { User as UserIcon, Mail, Calendar, Package, LogOut, Loader2, Clock, CheckCircle, Truck } from 'lucide-react';
+import { User as UserIcon, Mail, Calendar, Package, LogOut, Loader2, Clock, CheckCircle, Truck, ArrowLeft } from 'lucide-react';
 
 export default function ProfilePage() {
   const { user, loading: authLoading, logout } = useAuth();
@@ -26,18 +26,21 @@ export default function ProfilePage() {
         if (snapshot.exists()) setUserData(snapshot.val());
       });
 
-      // 2. Fetch User's Orders (Real-time listener so status updates instantly)
-      const ordersRef = ref(db, 'orders');
+      // 2. Fetch User's Orders Securely
+      // We use a query to only request orders belonging to this specific user ID
+      const ordersRef = query(ref(db, 'orders'), orderByChild('userId'), equalTo(user.uid));
+      
       const unsubscribe = onValue(ordersRef, (snapshot) => {
         const data = snapshot.val();
         if (data) {
-          // Filter to only show orders belonging to this specific user
+          // The data is already filtered by Firebase, so we just sort it
           const userOrders = Object.keys(data)
             .map(key => ({ id: key, ...data[key] }))
-            .filter(order => order.userId === user.uid)
             .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()); // Newest first
           
           setOrders(userOrders);
+        } else {
+          setOrders([]); // Handle empty state securely
         }
         setDbLoading(false);
       });
@@ -70,12 +73,22 @@ export default function ProfilePage() {
     <div className="min-h-screen bg-slate-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-5xl mx-auto space-y-8">
         
+        {/* NEW: Back Button */}
+        <button 
+          onClick={() => router.push('/')} 
+          className="flex items-center gap-2 text-slate-500 hover:text-indigo-600 transition-colors font-medium mb-4"
+        >
+          <ArrowLeft className="w-4 h-4" /> Back to Store
+        </button>
+
         <div className="flex items-center justify-between">
           <h1 className="text-3xl font-bold text-slate-900">My Account</h1>
           <button onClick={handleLogout} className="flex items-center gap-2 text-slate-500 hover:text-red-600 font-medium transition-colors bg-white px-4 py-2 rounded-lg border border-slate-200 shadow-sm">
             <LogOut className="w-4 h-4" /> Sign Out
           </button>
         </div>
+
+        
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           

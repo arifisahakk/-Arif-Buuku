@@ -6,22 +6,20 @@ import { useCart } from '../../store/CartContext';
 import { useRouter } from 'next/navigation';
 import { ref, push, set } from 'firebase/database';
 import { db } from '../../lib/firebase';
-import { CheckCircle, CreditCard, Package, ArrowLeft, Loader2, Square, CheckSquare } from 'lucide-react';
+import { CheckCircle, CreditCard, Package, ArrowLeft, Loader2, Square, CheckSquare, Plus, Minus, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 
 export default function CheckoutPage() {
   const { user, loading: authLoading } = useAuth();
-  const { cart } = useCart();
+  // We need updateQuantity and removeFromCart here now!
+  const { cart, updateQuantity, removeFromCart } = useCart(); 
   const router = useRouter();
   
   const [isProcessing, setIsProcessing] = useState(false);
   const [orderSuccess, setOrderSuccess] = useState(false);
-  
-  // State for selective checkout
   const [selectedItemIds, setSelectedItemIds] = useState<string[]>([]);
   const [hasInitialized, setHasInitialized] = useState(false);
 
-  // Auto-select all items initially when the cart loads
   useEffect(() => {
     if (cart.length > 0 && !hasInitialized) {
       setSelectedItemIds(cart.map(item => item.id));
@@ -29,19 +27,15 @@ export default function CheckoutPage() {
     }
   }, [cart, hasInitialized]);
 
-  // Security check: must be logged in
   useEffect(() => {
     if (!authLoading && !user) router.push('/login');
   }, [user, authLoading, router]);
 
-  // Derived state for selected items
   const selectedItems = cart.filter(item => selectedItemIds.includes(item.id));
   const selectedTotal = selectedItems.reduce((total, item) => total + (item.price * item.quantity), 0);
 
   const toggleItemSelection = (id: string) => {
-    setSelectedItemIds(prev => 
-      prev.includes(id) ? prev.filter(itemId => itemId !== id) : [...prev, id]
-    );
+    setSelectedItemIds(prev => prev.includes(id) ? prev.filter(itemId => itemId !== id) : [...prev, id]);
   };
 
   const handleConfirmOrder = async () => {
@@ -49,7 +43,6 @@ export default function CheckoutPage() {
     setIsProcessing(true);
 
     try {
-      // 1. Create the order with ONLY selected items
       const newOrderRef = push(ref(db, 'orders'));
       await set(newOrderRef, {
         userId: user.uid,
@@ -57,18 +50,15 @@ export default function CheckoutPage() {
         items: selectedItems,
         totalAmount: selectedTotal,
         status: 'waiting for approval',
-        stockDecremented: false, // Flag to track if admin has deducted stock
+        stockDecremented: false,
         createdAt: new Date().toISOString()
       });
 
-      // 2. Update the user's cart to keep ONLY the unselected items
       const remainingCartItems = cart.filter(item => !selectedItemIds.includes(item.id));
       await set(ref(db, `users/${user.uid}/cart`), remainingCartItems);
 
-      // 3. Show success screen
       setOrderSuccess(true);
     } catch (error) {
-      console.error("Error processing order:", error);
       alert("There was an issue processing your order. Please try again.");
     } finally {
       setIsProcessing(false);
@@ -77,7 +67,6 @@ export default function CheckoutPage() {
 
   if (authLoading || !user) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-indigo-600" /></div>;
 
-  // SUCCESS SCREEN
   if (orderSuccess) {
     return (
       <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4">
@@ -94,12 +83,11 @@ export default function CheckoutPage() {
     );
   }
 
-  // CHECKOUT SCREEN
   return (
     <div className="min-h-screen bg-slate-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-3xl mx-auto">
         <button onClick={() => router.back()} className="flex items-center gap-2 text-slate-500 hover:text-indigo-600 font-medium transition-colors mb-8">
-          <ArrowLeft className="w-4 h-4" /> Back
+          <ArrowLeft className="w-4 h-4" /> Back to Cart
         </button>
 
         <h1 className="text-3xl font-bold text-slate-900 mb-8 flex items-center gap-3">
@@ -116,8 +104,8 @@ export default function CheckoutPage() {
           <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
             
             <div className="p-6 sm:p-8 border-b border-slate-100 bg-slate-50/50">
-              <h2 className="text-lg font-bold text-slate-900 mb-2">Select Items to Buy</h2>
-              <p className="text-sm text-slate-500 mb-6">Choose which items from your cart you want to check out now.</p>
+              <h2 className="text-lg font-bold text-slate-900 mb-2">Order Summary</h2>
+              <p className="text-sm text-slate-500 mb-6">Select items and adjust quantities before confirming.</p>
               
               <div className="space-y-4">
                 {cart.map((item) => {
@@ -126,23 +114,49 @@ export default function CheckoutPage() {
                     <div 
                       key={item.id} 
                       onClick={() => toggleItemSelection(item.id)}
-                      className={`flex justify-between items-center p-4 rounded-xl border transition-colors cursor-pointer ${isSelected ? 'border-indigo-600 bg-indigo-50/30' : 'border-slate-200 bg-white hover:border-slate-300'}`}
+                      className={`p-4 rounded-xl border transition-colors cursor-pointer ${isSelected ? 'border-indigo-600 bg-indigo-50/30' : 'border-slate-200 bg-white hover:border-slate-300'}`}
                     >
-                      <div className="flex items-center gap-4">
-                        <button className={`text-${isSelected ? 'indigo-600' : 'slate-300'}`}>
+                      <div className="flex gap-4">
+                        {/* Checkbox */}
+                        <div className={`mt-1 text-${isSelected ? 'indigo-600' : 'slate-300'}`}>
                           {isSelected ? <CheckSquare className="w-6 h-6" /> : <Square className="w-6 h-6" />}
-                        </button>
-                        <div className="w-10 h-14 bg-slate-200 rounded overflow-hidden flex-shrink-0 hidden sm:block">
-                          {item.coverUrl && <img src={item.coverUrl} alt={item.title} className="w-full h-full object-cover" />}
                         </div>
-                        <div>
-                          <p className={`font-semibold text-sm line-clamp-1 ${isSelected ? 'text-indigo-900' : 'text-slate-700'}`}>{item.title}</p>
-                          <p className="text-slate-500 text-xs mt-1">Qty: {item.quantity}</p>
+
+                        {/* Image */}
+                        <div className="w-16 h-20 bg-slate-200 rounded object-cover overflow-hidden flex-shrink-0">
+                          {item.coverUrl ? (
+                            <img src={item.coverUrl} alt={item.title} className="w-full h-full object-cover" />
+                          ) : (
+                            <span className="text-[10px] text-slate-400 flex h-full items-center justify-center">No Img</span>
+                          )}
+                        </div>
+
+                        {/* Details & Interactive Controls */}
+                        <div className="flex-1 flex flex-col justify-between">
+                          <div>
+                            <h3 className={`font-semibold text-sm line-clamp-1 ${isSelected ? 'text-indigo-900' : 'text-slate-700'}`}>{item.title}</h3>
+                            <p className={`font-bold mt-1 ${isSelected ? 'text-indigo-700' : 'text-indigo-600'}`}>RM {item.price.toFixed(2)}</p>
+                          </div>
+
+                          <div className="flex items-center justify-between mt-2">
+                            {/* Quantity Adjuster - Using e.stopPropagation() so clicking + doesn't uncheck the box! */}
+                            <div className="flex items-center gap-3 bg-white border border-slate-200 rounded-lg px-2 py-1 shadow-sm">
+                              <button onClick={(e) => { e.stopPropagation(); updateQuantity(item.id, item.quantity - 1); }} className="text-slate-700 hover:text-indigo-600 transition-colors">
+                                <Minus className="w-3 h-3" />
+                              </button>
+                              <span className="text-xs font-bold w-4 text-center text-slate-900">{item.quantity}</span>
+                              <button onClick={(e) => { e.stopPropagation(); updateQuantity(item.id, item.quantity + 1); }} className="text-slate-700 hover:text-indigo-600 transition-colors">
+                                <Plus className="w-3 h-3" />
+                              </button>
+                            </div>
+                            
+                            {/* Delete Button */}
+                            <button onClick={(e) => { e.stopPropagation(); removeFromCart(item.id); }} className="text-red-500 hover:text-red-700 p-1 transition-colors">
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
                         </div>
                       </div>
-                      <p className={`font-bold ${isSelected ? 'text-indigo-700' : 'text-slate-500'}`}>
-                        RM {(item.price * item.quantity).toFixed(2)}
-                      </p>
                     </div>
                   );
                 })}

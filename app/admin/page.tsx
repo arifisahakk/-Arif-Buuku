@@ -119,36 +119,38 @@ export default function AdminDashboard() {
   return (
     <div className="min-h-screen bg-slate-50 flex">
       
-      <aside className="w-64 bg-slate-900 text-slate-300 flex flex-col hidden md:flex min-h-screen sticky top-0">
+      {/* Responsive Slide-Out Sidebar */}
+      <aside className="fixed inset-y-0 left-0 z-50 w-64 bg-slate-900 text-slate-300 flex flex-col transform transition-transform duration-300 -translate-x-[248px] hover:translate-x-0 md:relative md:translate-x-0 md:min-h-screen md:sticky md:top-0 shadow-2xl md:shadow-none border-r-8 border-indigo-600 md:border-none">
+        
         <div className="p-6 flex items-center gap-3 border-b border-slate-800">
-          <Shield className="w-8 h-8 text-indigo-500" />
-          <span className="text-white font-bold text-lg">Admin Panel</span>
+          <Shield className="w-8 h-8 text-indigo-500 flex-shrink-0" />
+          <span className="text-white font-bold text-lg whitespace-nowrap">Admin Panel</span>
         </div>
         
-        {/* Navigation Links */}
-        <nav className="flex-1 p-4 space-y-2">
-          <button onClick={() => setActiveTab('books')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${activeTab === 'books' ? 'bg-indigo-600 text-white font-medium' : 'hover:bg-slate-800'}`}><BookOpen className="w-5 h-5" /> Manage Books</button>
-          <button onClick={() => setActiveTab('orders')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${activeTab === 'orders' ? 'bg-indigo-600 text-white font-medium' : 'hover:bg-slate-800'}`}><Truck className="w-5 h-5" /> Manage Orders</button>
-          <button onClick={() => setActiveTab('users')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${activeTab === 'users' ? 'bg-indigo-600 text-white font-medium' : 'hover:bg-slate-800'}`}><Users className="w-5 h-5" /> Manage Users</button>
+        <nav className="flex-1 p-4 space-y-2 overflow-hidden">
+          <button onClick={() => setActiveTab('books')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors whitespace-nowrap ${activeTab === 'books' ? 'bg-indigo-600 text-white font-medium' : 'hover:bg-slate-800'}`}><BookOpen className="w-5 h-5 flex-shrink-0" /> Manage Books</button>
+          <button onClick={() => setActiveTab('orders')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors whitespace-nowrap ${activeTab === 'orders' ? 'bg-indigo-600 text-white font-medium' : 'hover:bg-slate-800'}`}><Truck className="w-5 h-5 flex-shrink-0" /> Manage Orders</button>
+          <button onClick={() => setActiveTab('users')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors whitespace-nowrap ${activeTab === 'users' ? 'bg-indigo-600 text-white font-medium' : 'hover:bg-slate-800'}`}><Users className="w-5 h-5 flex-shrink-0" /> Manage Users</button>
         </nav>
 
-        {/* NEW: Logout Button at the bottom */}
         <div className="p-4 border-t border-slate-800">
           <button 
             onClick={handleLogout}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-red-400 transition-colors font-medium"
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-red-400 transition-colors font-medium whitespace-nowrap"
           >
-            <LogOut className="w-5 h-5" /> Sign Out
+            <LogOut className="w-5 h-5 flex-shrink-0" /> Sign Out
           </button>
         </div>
       </aside>
 
       <main className="flex-1 p-8">
         
-        {/* TAB: MANAGE BOOKS */}
+        {/* --- TAB: MANAGE BOOKS --- */}
         {activeTab === 'books' && (
            <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 max-w-7xl mx-auto">
-             <div className="xl:col-span-1 bg-white p-6 rounded-xl shadow-sm border border-slate-100 h-fit sticky top-8">
+             
+             {/* FIX: Changed 'sticky' to 'xl:sticky' so it stops overlapping on split screens */}
+             <div className="xl:col-span-1 bg-white p-6 rounded-xl shadow-sm border border-slate-100 h-fit xl:sticky xl:top-8 self-start">
                <div className="flex justify-between items-center mb-4">
                  <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
                    {editingBookId ? <Edit2 className="w-5 h-5 text-amber-500" /> : <Plus className="w-5 h-5 text-indigo-600" />} {editingBookId ? 'Edit Book' : 'Add New Book'}
@@ -165,10 +167,11 @@ export default function AdminDashboard() {
                   <select value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})} className="w-full p-2 border border-slate-300 rounded text-sm text-slate-900 bg-white"><option value="computing">Computing</option><option value="fiction">Fiction</option><option value="productivity">Productivity</option></select>
                   <input required type="url" placeholder="Cover Image URL" value={formData.coverUrl} onChange={e => setFormData({...formData, coverUrl: e.target.value})} className="w-full p-2 border border-slate-300 rounded text-sm text-slate-900 bg-white" />
                   <textarea required rows={3} placeholder="Description" value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} className="w-full p-2 border border-slate-300 rounded text-sm text-slate-900 bg-white"></textarea>
-                  <button type="submit" disabled={isSubmitting} className="w-full bg-slate-900 text-white font-medium py-2 rounded hover:bg-indigo-600">{isSubmitting ? 'Saving...' : 'Save Book'}</button>
+                  <button type="submit" disabled={isSubmitting} className="w-full bg-slate-900 text-white font-medium py-2 rounded hover:bg-indigo-600 transition-colors">{isSubmitting ? 'Saving...' : 'Save Book'}</button>
                </form>
              </div>
              
+             {/* Inventory Table */}
              <div className="xl:col-span-2 bg-white p-6 rounded-xl shadow-sm border border-slate-100">
                <h2 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2"><Package className="w-5 h-5 text-indigo-600" /> Inventory</h2>
                <div className="overflow-x-auto">
@@ -178,11 +181,10 @@ export default function AdminDashboard() {
                      {books.map(book => (
                        <tr key={book.id}>
                          <td className="px-4 py-3"><div className="text-sm font-medium text-slate-900">{book.title}</div><div className="text-xs text-slate-500">RM {book.price.toFixed(2)}</div></td>
-                         {/* FIX: Darkened and bolded stock text for maximum visibility */}
                          <td className="px-4 py-3 text-sm text-slate-900 font-bold">{book.stock}</td>
                          <td className="px-4 py-3 text-right">
-                           <button onClick={() => {setFormData({title: book.title, author: book.author, price: book.price.toString(), stock: book.stock.toString(), category: book.category, coverUrl: book.coverUrl, description: book.description}); setEditingBookId(book.id); window.scrollTo(0,0);}} className="text-indigo-600 hover:text-indigo-900 text-sm font-medium mr-3"><Edit2 className="w-4 h-4 inline" /> Edit</button>
-                           <button onClick={() => handleDeleteBook(book.id, book.title)} className="text-red-500 hover:text-red-700 text-sm font-medium"><Trash2 className="w-4 h-4 inline" /> Delete</button>
+                           <button onClick={() => {setFormData({title: book.title, author: book.author, price: book.price.toString(), stock: book.stock.toString(), category: book.category, coverUrl: book.coverUrl, description: book.description}); setEditingBookId(book.id); window.scrollTo(0,0);}} className="text-indigo-600 hover:text-indigo-900 text-sm font-medium mr-3 transition-colors"><Edit2 className="w-4 h-4 inline" /> Edit</button>
+                           <button onClick={() => handleDeleteBook(book.id, book.title)} className="text-red-500 hover:text-red-700 text-sm font-medium transition-colors"><Trash2 className="w-4 h-4 inline" /> Delete</button>
                          </td>
                        </tr>
                      ))}
